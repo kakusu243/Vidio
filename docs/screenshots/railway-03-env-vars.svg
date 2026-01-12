@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700">
+  <rect width="100%" height="100%" fill="#fbfbfc"/>
+  <text x="80" y="120" font-family="Helvetica, Arial" font-size="24" fill="#24292f">Capture #3 — Variables d'environnement</text>
+  <rect x="90" y="160" width="1000" height="360" rx="6" fill="#fff" stroke="#e1e4e8"/>
+  <text x="120" y="210" font-family="Helvetica, Arial" font-size="16" fill="#586069">Ajoutez : <tspan font-weight="bold">API_KEY</tspan>, <tspan font-weight="bold">RATE_LIMIT_PER_MINUTE</tspan></text>
+  <text x="120" y="260" font-family="Helvetica, Arial" font-size="14" fill="#6a737d">Exemple : API_KEY = ma_cle_secrete</text>
+  <text x="120" y="620" font-family="Helvetica, Arial" font-size="12" fill="#6a737d">Astuce : ne publiez jamais vos clés dans le dépôt public.</text>
+</svg>

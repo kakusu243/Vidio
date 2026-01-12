@@ -1,0 +1,54 @@
+name: Build and Publish Docker image
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'server/**'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./server
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/telecharger-api:${{ github.sha }}
+
+      - name: Print image info
+        run: |
+          echo "Image pushed: ghcr.io/${{ github.repository_owner }}/telecharger-api:${{ github.sha }}"
+
+      # Optional: deploy to Railway (uncomment & set secret RAILWAY_API_KEY to enable)
+      - name: Deploy to Railway (optional)
+        if: ${{ secrets.RAILWAY_API_KEY != '' }}
+        run: |
+          echo "Railway deploy requested" 
+          # Install Railway CLI and deploy (requires RAILWAY_API_KEY secret)
+          curl -sL https://railway.app/install.sh | sh || true
+          export RAILWAY_API_TOKEN="${{ secrets.RAILWAY_API_KEY }}"
+          # The next commands are examples; adjust according to your Railway project config
+          railway login --apiKey "$RAILWAY_API_TOKEN" || true
+          railway up --yes || true

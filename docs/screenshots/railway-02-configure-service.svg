@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700">
+  <rect width="100%" height="100%" fill="#ffffff"/>
+  <text x="80" y="120" font-family="Helvetica, Arial" font-size="24" fill="#24292f">Capture #2 — Configuration du service</text>
+  <rect x="90" y="160" width="1000" height="380" rx="6" fill="#f6f8fa" stroke="#e1e4e8"/>
+  <text x="110" y="200" font-family="Helvetica, Arial" font-size="18" fill="#586069">Dossier : <tspan font-weight="bold">server</tspan> &nbsp; · &nbsp; Méthode : <tspan font-weight="bold">Docker</tspan></text>
+  <text x="110" y="260" font-family="Helvetica, Arial" font-size="16" fill="#6a737d">Commandes et options : choisissez la commande de démarrage ci-dessous.</text>
+  <rect x="110" y="300" width="720" height="48" rx="6" fill="#fff" stroke="#e1e4e8"/>
+  <text x="130" y="333" font-family="Courier New" font-size="14" fill="#24292f">gunicorn app:app --bind 0.0.0.0:$PORT --workers 2</text>
+  <text x="110" y="620" font-family="Helvetica, Arial" font-size="12" fill="#6a737d">Remarque : remplacez par une capture réelle pour la documentation finale.</text>
+</svg>
