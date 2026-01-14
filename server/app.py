@@ -200,8 +200,9 @@ def download():
                 try:
                     resp.headers['Content-Length'] = str(os.path.getsize(mp3_file))
                 except Exception:
-                    pass
-                return resp
+                    pass                # Mark mp3 conversion as using server-side conversion (fallback)
+                resp.headers['X-Used-Fallback'] = 'mp3-conversion'
+                resp.headers['Access-Control-Expose-Headers'] = 'X-Used-Fallback'                return resp
             finally:
                 # If something failed and tempdir still exists, leave cleanup to generator's finally
                 pass
@@ -245,10 +246,15 @@ def download():
                 r = requests.get(media_url, headers=headers, stream=True, timeout=15, allow_redirects=True)
                 # Si le serveur retourne un flux vidéo/audio valide (200 ou 206), proxyer directement
                 if r.status_code in (200, 206) and r.headers.get('content-type', '').startswith(('video/', 'audio/', 'application/octet-stream')):
-                    return stream_response_from_requests(r)
+                    app.logger.info(f"Proxying direct media URL for {video_url}")
+                    resp = stream_response_from_requests(r)
+                    # Indiquer que le serveur n'a pas eu besoin du fallback
+                    resp.headers['X-Used-Fallback'] = 'direct'
+                    resp.headers['Access-Control-Expose-Headers'] = 'X-Used-Fallback'
+                    return resp
                 # sinon on tombera sur le fallback
             except requests.exceptions.RequestException as e:
-                print(f"Warning: direct media GET failed: {e}")
+                app.logger.warning(f"Warning: direct media GET failed: {e}")
 
         # Fallback: télécharger avec yt-dlp (merge audio/video si nécessaire) puis streamer le fichier résultant
         tempdir = tempfile.mkdtemp()
@@ -264,7 +270,10 @@ def download():
                 with yt_dlp.YoutubeDL(ydl_opts_dl) as ydl_dl:
                     ydl_dl.download([video_url])
             except Exception as e:
+                app.logger.error(f"yt-dlp download failed for {video_url}: {e}")
                 return jsonify({'error': 'Échec du téléchargement via yt-dlp', 'reason': str(e)}), 502
+
+            app.logger.info(f"Using yt-dlp fallback to download and assemble {video_url}")
 
             # Chercher le fichier créé
             target_file = None
@@ -298,6 +307,9 @@ def download():
                 resp.headers['Content-Length'] = str(os.path.getsize(target_file))
             except Exception:
                 pass
+            # Mark that we used the yt-dlp fallback so front-end can display a note
+            resp.headers['X-Used-Fallback'] = 'yt-dlp'
+            resp.headers['Access-Control-Expose-Headers'] = 'X-Used-Fallback'
             return resp
         finally:
             # si quelque chose a échoué et tempdir existe encore, cleanup laissé au générateur

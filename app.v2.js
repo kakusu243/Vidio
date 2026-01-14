@@ -162,6 +162,25 @@ function updateDownloadLink(){
   const downloadUrl = `${API_BASE}/api/download?url=${encodeURIComponent(url)}&format_id=${encodeURIComponent(selObj.format_id)}`;
   downloadBtn.href = downloadUrl;
   downloadBtn.classList.remove('disabled');
+
+  // Non bloquant : vérifier si le serveur utilisera le fallback (yt-dlp) et informer l'utilisateur
+  (async function probeDownload(){
+    try{
+      const resp = await fetch(downloadUrl, { method: 'GET', headers: { 'Range': 'bytes=0-0' }, mode: 'cors' });
+      const fb = resp.headers.get('X-Used-Fallback');
+      if(fb === 'yt-dlp' || fb === 'mp3-conversion'){
+        showInfo('Remarque : le téléchargement utilisera un fallback côté serveur (yt-dlp). Le téléchargement peut être plus lent mais le fichier sera complet.');
+      } else {
+        // clear previous fallback notice if present
+        if(infoBox && infoBox.textContent && infoBox.textContent.includes("Remarque : le téléchargement utilisera")){
+          infoBox.innerHTML = '';
+        }
+      }
+    }catch(e){
+      // probe failed (CORS, network) — silencieux
+      console.debug('probeDownload failed', e);
+    }
+  })();
 }
 
 async function copyCurrentLink(){
