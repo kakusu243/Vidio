@@ -43,12 +43,18 @@ jobs:
 
       # Optional: deploy to Railway (uncomment & set secret RAILWAY_API_KEY to enable)
       - name: Deploy to Railway (optional)
-        if: ${{ secrets.RAILWAY_API_KEY != '' }}
+        env:
+          RAILWAY_API_KEY: ${{ secrets.RAILWAY_API_KEY }}
         run: |
-          echo "Railway deploy requested" 
+          # Skip if no API key set (safer than referencing secrets in 'if' expression)
+          if [ -z "$RAILWAY_API_KEY" ]; then
+            echo "RAILWAY_API_KEY not set — skipping Railway deploy"
+            exit 0
+          fi
+          echo "Railway deploy requested"
           # Install Railway CLI and deploy (requires RAILWAY_API_KEY secret)
           curl -sL https://railway.app/install.sh | sh || true
-          export RAILWAY_API_TOKEN="${{ secrets.RAILWAY_API_KEY }}"
+          export RAILWAY_API_TOKEN="$RAILWAY_API_KEY"
           # The next commands are examples; adjust according to your Railway project config
           railway login --apiKey "$RAILWAY_API_TOKEN" || true
           railway up --yes || true
