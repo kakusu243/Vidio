@@ -124,10 +124,18 @@ async function analyze(){
         const padding = Math.max(0, 100 - formatInfo.length);
         const label = formatInfo + ' '.repeat(padding) + typeStr;
         const opt = document.createElement('option');
-        opt.value = JSON.stringify({format_id: fmt.format_id});
+        opt.value = JSON.stringify({format_id: fmt.format_id, has_audio: !!fmt.has_audio});
         opt.textContent = label;
         formatSelect.appendChild(opt);
       });
+      // Sélectionner par défaut le premier format qui contient de l'audio (préférer les flux muxés)
+      (function selectDefaultWithAudio(){
+        const opts = Array.from(formatSelect.options);
+        let defaultIndex = opts.findIndex(o => {
+          try { return JSON.parse(o.value).has_audio; } catch(e){ return false; }
+        });
+        formatSelect.selectedIndex = defaultIndex === -1 ? 0 : defaultIndex;
+      })();
       updateDownloadLink();
       downloadBtn.classList.remove('disabled');
       resultBox.classList.remove('d-none');

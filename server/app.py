@@ -214,28 +214,94 @@ def download():
         if not chosen:
             return jsonify({'error': 'Format non trouvé'}), 404
 
-        # Direct media URL (peut être temporaire)
+        # Direct media URL (peut être temporaire) — essayer d'utiliser l'URL fournie, sinon fallback vers yt-dlp pour un fichier correctement assemblé
         media_url = chosen.get('url')
-        if not media_url:
-            return jsonify({'error': 'URL du média introuvable'}), 500
 
-        # Proxy the stream
-        headers = {'User-Agent': request.headers.get('User-Agent', 'python-requests')}
-        r = requests.get(media_url, headers=headers, stream=True, timeout=15)
-        if r.status_code != 200:
-            return abort(502)
+        # Construire headers en relayant User-Agent et Range, et forcer Accept-Encoding: identity (éviter décompression)
+        headers = {
+            'User-Agent': request.headers.get('User-Agent', 'python-requests'),
+            'Accept-Encoding': 'identity'
+        }
+        if request.headers.get('Range'):
+            headers['Range'] = request.headers.get('Range')
 
-        filename = secure_filename((info.get('title') or 'video') + '.' + (chosen.get('ext') or 'mp4'))
-        def generate():
-            for chunk in r.iter_content(chunk_size=8192):
-                if chunk:
-                    yield chunk
+        def stream_response_from_requests(r):
+            filename = secure_filename((info.get('title') or 'video') + '.' + (chosen.get('ext') or 'mp4'))
+            def generate():
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        yield chunk
+            resp = Response(stream_with_context(generate()), status=r.status_code, content_type=r.headers.get('content-type', 'application/octet-stream'))
+            resp.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+            if r.headers.get('content-length'):
+                resp.headers['Content-Length'] = r.headers.get('content-length')
+            if r.headers.get('accept-ranges'):
+                resp.headers['Accept-Ranges'] = r.headers.get('accept-ranges')
+            return resp
 
-        resp = Response(stream_with_context(generate()), content_type=r.headers.get('content-type', 'application/octet-stream'))
-        resp.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
-        if r.headers.get('content-length'):
-            resp.headers['Content-Length'] = r.headers.get('content-length')
-        return resp
+        # Si une URL est fournie, tenter un GET direct
+        if media_url:
+            try:
+                r = requests.get(media_url, headers=headers, stream=True, timeout=15, allow_redirects=True)
+                # Si le serveur retourne un flux vidéo/audio valide (200 ou 206), proxyer directement
+                if r.status_code in (200, 206) and r.headers.get('content-type', '').startswith(('video/', 'audio/', 'application/octet-stream')):
+                    return stream_response_from_requests(r)
+                # sinon on tombera sur le fallback
+            except requests.exceptions.RequestException as e:
+                print(f"Warning: direct media GET failed: {e}")
+
+        # Fallback: télécharger avec yt-dlp (merge audio/video si nécessaire) puis streamer le fichier résultant
+        tempdir = tempfile.mkdtemp()
+        try:
+            outtmpl = os.path.join(tempdir, '%(title)s.%(ext)s')
+            ydl_opts_dl = {
+                'outtmpl': outtmpl,
+                'format': str(format_id),
+                'quiet': True,
+                'noplaylist': True,
+            }
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts_dl) as ydl_dl:
+                    ydl_dl.download([video_url])
+            except Exception as e:
+                return jsonify({'error': 'Échec du téléchargement via yt-dlp', 'reason': str(e)}), 502
+
+            # Chercher le fichier créé
+            target_file = None
+            for root, dirs, files in os.walk(tempdir):
+                for fn in files:
+                    target_file = os.path.join(root, fn)
+                    break
+                if target_file:
+                    break
+            if not target_file:
+                return jsonify({'error': 'Fichier de téléchargement introuvable'}), 500
+
+            filename = secure_filename((info.get('title') or 'video') + '.' + (os.path.splitext(target_file)[1].lstrip('.') or (chosen.get('ext') or 'mp4')))
+            def generate_file():
+                try:
+                    with open(target_file, 'rb') as fh:
+                        while True:
+                            chunk = fh.read(8192)
+                            if not chunk:
+                                break
+                            yield chunk
+                finally:
+                    try:
+                        shutil.rmtree(tempdir)
+                    except Exception:
+                        pass
+
+            resp = Response(stream_with_context(generate_file()), content_type='application/octet-stream')
+            resp.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+            try:
+                resp.headers['Content-Length'] = str(os.path.getsize(target_file))
+            except Exception:
+                pass
+            return resp
+        finally:
+            # si quelque chose a échoué et tempdir existe encore, cleanup laissé au générateur
+            pass
 
     except yt_dlp.utils.DownloadError as e:
         return jsonify({'error': 'Erreur durant l’extraction', 'reason': str(e)}), 400
