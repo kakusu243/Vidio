@@ -1,5 +1,5 @@
 // Configuration : changez API_BASE pour pointer vers votre serveur d'extraction
-const API_BASE = 'https://vidio-production.up.railway.app'; // production Railway URL
+const API_BASE = document.querySelector('meta[name="api-base"]')?.content || 'https://vidio-production.up.railway.app'; // production Railway URL
 
 const videoUrlInput = document.getElementById('videoUrl');
 const analyzeBtn = document.getElementById('analyzeBtn');
