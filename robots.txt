@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://kakusu243.github.io/Vidio/sitemap.xml
