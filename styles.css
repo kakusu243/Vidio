@@ -3,3 +3,5 @@ body { background: #f8f9fa; }
 #infoBox { font-size: 0.9rem; }
 select.form-select { max-width: 420px; }
 .btn.disabled { pointer-events: none; opacity: 0.7; }
+.btn.disabled:hover { background-color: #6c757d; }
+.site-logo { height: 100px; }
