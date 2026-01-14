@@ -200,9 +200,11 @@ def download():
                 try:
                     resp.headers['Content-Length'] = str(os.path.getsize(mp3_file))
                 except Exception:
-                    pass                # Mark mp3 conversion as using server-side conversion (fallback)
+                    pass
+                # Mark mp3 conversion as using server-side conversion (fallback)
                 resp.headers['X-Used-Fallback'] = 'mp3-conversion'
-                resp.headers['Access-Control-Expose-Headers'] = 'X-Used-Fallback'                return resp
+                resp.headers['Access-Control-Expose-Headers'] = 'X-Used-Fallback'
+                return resp
             finally:
                 # If something failed and tempdir still exists, leave cleanup to generator's finally
                 pass
