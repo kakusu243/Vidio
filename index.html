@@ -4,12 +4,21 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="api-base" content="https://vidio-production.up.railway.app">
-    <title>Telechargeur de vidéos (front-end)</title>
+    <title>Vidio.com</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <link rel="shortcut icon" href="vidio_icon1.png" type="image/favicon">
   </head>
   <body>
+    <header>
+      <nav class="navbar navbar-expand-lg navbar-dark bg-light">
+        <div class="container">
+          <a class="navbar-brand" href="#"><img src="./Vidio.png" alt="vidio logo" class="site-logo"></a>
+        </div>
+      </nav>
+    </header>
     <div class="container py-5">
+      <div id="apiAlert" class="alert alert-danger d-none" role="alert"></div>
       <h1 class="mb-4">Téléchargeur de vidéos</h1>
 
       <div class="alert alert-warning" role="alert">
@@ -57,7 +66,7 @@
       </div>
 
       <footer class="mt-5 text-muted small">
-        <p>Front-end statique hébergeable sur <strong>GitHub Pages</strong>. Le front appelle une API d'extraction (configurable) qui fait l'extraction des formats et la diffusion.</p>
+        <p>Site creer par<strong>JOHN KAKUSU</strong>All rights reserved. </p>
       </footer>
     </div>
 

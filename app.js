@@ -30,13 +30,32 @@ clearBtn.addEventListener('click', clearAll);
 formatSelect.addEventListener('change', updateDownloadLink);
 copyLinkBtn.addEventListener('click', copyCurrentLink);
 
+const apiAlert = document.getElementById('apiAlert');
+
+function showApiAlert(msg) {
+  if(apiAlert) {
+    apiAlert.textContent = msg;
+    apiAlert.classList.remove('d-none');
+  } else {
+    infoBox.innerHTML = `<div class="alert alert-danger">${msg}</div>`;
+  }
+}
+
+function hideApiAlert() {
+  if(apiAlert) {
+    apiAlert.textContent = '';
+    apiAlert.classList.add('d-none');
+  }
+}
+
 function showError(msg) {
   infoBox.innerHTML = `<div class="alert alert-danger">${msg}</div>`;
 }
 
 function showInfo(msg) {
   infoBox.innerHTML = `<div class="alert alert-info">${msg}</div>`;
-}
+  hideApiAlert();
+} 
 
 function clearAll(){
   videoUrlInput.value='';
@@ -52,9 +71,25 @@ async function analyze(){
 
   showLoading();
   try{
-    const resp = await fetch(`${API_BASE}/api/extract?url=${encodeURIComponent(url)}`);
-    if(!resp.ok) throw new Error('Erreur lors de la requête vers l’API d’extraction');
+    let resp;
+    try {
+      resp = await fetch(`${API_BASE}/api/extract?url=${encodeURIComponent(url)}`);
+    } catch(fetchErr) {
+      const msg = `Impossible de joindre l'API (${API_BASE}). Vérifiez que le serveur est accessible. Détails: ${fetchErr.message}`;
+      showApiAlert(msg);
+      throw fetchErr;
+    }
+    if(!resp.ok){
+      let errText = `Erreur serveur (${resp.status})`;
+      try{
+        const errJson = await resp.json();
+        if(errJson.error) errText += `: ${errJson.error}${errJson.reason ? ' - ' + errJson.reason : ''}`;
+      }catch(e){}
+      showApiAlert(errText);
+      throw new Error(errText);
+    }
     const data = await resp.json();
+    hideApiAlert();
 
     // Afficher miniature et titre
     thumbnailImg.src = data.thumbnail || '';
